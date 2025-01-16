@@ -92,6 +92,7 @@ class GPT(nn.Module):
             if pn.endswith('c_proj.weight'):
                 torch.nn.init.normal_(p, mean=0.0, std=0.02/math.sqrt(2 * config.n_layer))
 
+        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         print("number of parameters: %.2fM" % (self.get_num_params() / 1e6,))
 
     def _init_weights(self, module):
@@ -104,3 +105,22 @@ class GPT(nn.Module):
 
     def forward(self, idx, targets=None):
         device = idx.device
+        b, t = idx.size()
+        assert t <= self.config.block_size
+        pos = torch.arange(0, t, dtype=torch.long, device=device)
+        tok_emb = self.transformer.wte(idx)
+        pos_emb = self.transformer.wpe(pos)
+        x = self.transformer.drop(tok_emb + pos_emb)
+        for block in self.transformer.h:
+            x = block(x)
+        x = self.transformer.ln_f(x)
+
+        loss = None
+        if targets:
+            logits = self.lm_head(x)
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
+        else:
+            logits = self.lm_head(x[:, [-1], :])
+
+        return logits, loss
+
