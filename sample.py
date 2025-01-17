@@ -45,6 +45,6 @@ max_new_tokens = 500
 x = (torch.tensor(start_ids, dtype=torch.long, device=device)[None, ...])
 with torch.no_grad():
     for k in range(num_samples):
-        y = model.generate(x, max_new_tokens)
+        y = model.generate(x, max_new_tokens, temperature=0.5, top_k=10)
         print(decode(y[0].tolist()))
         print('---------------')
