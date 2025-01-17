@@ -102,7 +102,7 @@ while True:
     # losses = estimate_loss()
     if iter_num % 100 == 0:
         losses = estimate_loss()
-        print(f"\rstep {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}", end='')
+        print(f"\rstep {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}", end='', flush=True)
         if losses['val'] < best_val_loss:
             best_val_loss = losses['val']
             checkpoint = {
@@ -113,7 +113,7 @@ while True:
                 'best_val_loss': best_val_loss,
                 'config': config
             }
-            print(f"\nsaving checkpoint to {checkpoint_dir}")
+            print(f"\nsaving checkpoint to {checkpoint_dir}", flush=True)
             torch.save(checkpoint, os.path.join(checkpoint_dir, 'ckpt.pt'))
     iter_num += 1
     if iter_num > 600000:
