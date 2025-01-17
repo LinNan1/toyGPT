@@ -20,6 +20,9 @@ os.makedirs(checkpoint_dir, exist_ok=True)
 batch_size = 12
 eval_iters = 50
 
+config_keys = [k for k,v in globals().items() if not k.startswith('_') and isinstance(v, (int, float, bool, str))]
+config = {k: globals()[k] for k in config_keys}
+
 # model 参数, init
 block_size = 64
 model_args = dict(
@@ -35,7 +38,7 @@ model_args = dict(
 # 有 checkpoint 则从 checkpoint 恢复
 ckpt_path = os.path.join(checkpoint_dir, 'ckpt.pt')
 if os.path.exists(ckpt_path):
-    checkpoint = torch.load(ckpt_path, map_location=device)
+    checkpoint = torch.load(ckpt_path, map_location=device, weights_only=True)
     checkpoint_model_args = checkpoint['model_args']
     # 这些参数是不能改的, 强制指定要恢复
     for k in ['n_layer', 'n_head', 'n_embd', 'block_size', 'bias', 'vocab_size']:
@@ -88,6 +91,7 @@ def estimate_loss():
     model.train()
     return out
 
+torch.set_num_threads(24)
 optimizer = torch.optim.Adam(model.parameters(), lr=6e-4)
 while True:
     X, Y = get_batch('train')
@@ -107,6 +111,7 @@ while True:
                 'model_args': model_args,
                 'iter_num': iter_num,
                 'best_val_loss': best_val_loss,
+                'config': config
             }
             print(f"\nsaving checkpoint to {checkpoint_dir}")
             torch.save(checkpoint, os.path.join(checkpoint_dir, 'ckpt.pt'))
